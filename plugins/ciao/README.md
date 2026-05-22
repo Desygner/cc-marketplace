@@ -70,11 +70,13 @@ defaults in `~/.ciao/credentials`:
 ```
 CIAO_TOKEN=ciao_pat_<your token from the local env>
 CIAO_API=http://127.0.0.1:54321/functions/v1/integrations-api
-CIAO_AGENT=http://127.0.0.1:8787
+CIAO_AGENT=http://127.0.0.1:9500
 ```
 
-Both `CIAO_API` (integrations-api base URL) and `CIAO_AGENT` (agent-runtime
-base URL) fall back to the prod endpoints when unset.
+`CIAO_API` is the integrations-api base (Supabase functions, default
+port `54321`). `CIAO_AGENT` is the agent-runtime base (separate Node
+service, default port `9500` — NOT the sandbox manager on `9400`). Both
+fall back to the prod endpoints when unset.
 
 ## Uninstall
 
