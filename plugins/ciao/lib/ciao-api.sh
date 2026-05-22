@@ -18,8 +18,11 @@
 #
 # The workspace is encoded in the PAT itself, so the CLI does NOT need to
 # know it. Every PAT-gated endpoint derives workspace_id from the token.
-
-set -euo pipefail
+#
+# This file is meant to be sourced, not executed. We deliberately do NOT
+# `set -euo pipefail` at the top — that would propagate into the caller's
+# shell and break unrelated code that relies on lenient defaults. Each
+# function handles errors explicitly via `ciao_die`.
 
 CIAO_API_DEFAULT="https://usnucnguvktksltkwjkn.supabase.co/functions/v1/integrations-api"
 CIAO_AGENT_DEFAULT="https://app.ciao.dev/api/agent-runtime"
