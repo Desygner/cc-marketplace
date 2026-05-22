@@ -55,28 +55,11 @@ Skills are auto-invoked by Claude when the conversation is relevant.
 ## How it works
 
 Every skill and command shells out to `curl` + `jq` against the Ciao
-integrations-api edge function and the agent-runtime, using the
-`CIAO_TOKEN` from `~/.ciao/credentials`. The shared helper is at
-`lib/ciao-api.sh`.
+API, using the `CIAO_TOKEN` from `~/.ciao/credentials`. The shared
+helper is at `lib/ciao-api.sh`.
 
 No daemon, no MCP server, no compile step. To inspect or extend, edit the
 markdown files directly.
-
-## Pointing at a non-prod Ciao
-
-If you run Ciao locally or against a staging environment, override the
-defaults in `~/.ciao/credentials`:
-
-```
-CIAO_TOKEN=ciao_pat_<your token from the local env>
-CIAO_API=http://127.0.0.1:54321/functions/v1/integrations-api
-CIAO_AGENT=http://127.0.0.1:9500
-```
-
-`CIAO_API` is the integrations-api base (Supabase functions, default
-port `54321`). `CIAO_AGENT` is the agent-runtime base (separate Node
-service, default port `9500` — NOT the sandbox manager on `9400`). Both
-fall back to the prod endpoints when unset.
 
 ## Uninstall
 

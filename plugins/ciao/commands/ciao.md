@@ -25,9 +25,5 @@ Setup:
   Save it to ~/.ciao/credentials as:
     CIAO_TOKEN=ciao_pat_...
 
-  The workspace is encoded in the token. Optional overrides:
-    CIAO_API=<integrations-api base URL>   (default: prod)
-    CIAO_AGENT=<agent-runtime base URL>    (default: prod)
-
 Docs: https://github.com/Desygner/cc-marketplace/tree/main/plugins/ciao
 ```
