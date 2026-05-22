@@ -10,11 +10,19 @@
 #   ciao_api list_projects
 #
 # Required tools: bash, curl, jq.
+#
+# Environment / credentials file (~/.ciao/credentials):
+#   CIAO_TOKEN     required — the PAT minted in the Ciao app
+#   CIAO_API       optional — integrations-api base URL (default: prod)
+#   CIAO_AGENT     optional — agent-runtime base URL (default: prod)
+#
+# The workspace is encoded in the PAT itself, so the CLI does NOT need to
+# know it. Every PAT-gated endpoint derives workspace_id from the token.
 
 set -euo pipefail
 
-CIAO_API_BASE_DEFAULT="https://usnucnguvktksltkwjkn.supabase.co/functions/v1/integrations-api"
-CIAO_AGENT_BASE_DEFAULT="https://app.ciao.dev/api/agent-runtime"
+CIAO_API_DEFAULT="https://usnucnguvktksltkwjkn.supabase.co/functions/v1/integrations-api"
+CIAO_AGENT_DEFAULT="https://app.ciao.dev/api/agent-runtime"
 CIAO_CREDENTIALS_FILE="${CIAO_CREDENTIALS_FILE:-$HOME/.ciao/credentials}"
 
 ciao_die() {
@@ -41,32 +49,23 @@ ciao_load_token() {
   fi
 }
 
-ciao_workspace_id() {
-  # Workspace id can come from $CIAO_WORKSPACE (env) or $CIAO_CREDENTIALS_FILE.
-  if [[ -z "${CIAO_WORKSPACE:-}" ]]; then
-    ciao_die "CIAO_WORKSPACE is not set. Add CIAO_WORKSPACE=<workspace-uuid> to $CIAO_CREDENTIALS_FILE."
-  fi
-  echo "$CIAO_WORKSPACE"
-}
-
 # ciao_api <action> [extra_json_body]
 #
 # Calls the integrations-api edge function. `action` is the dispatch key.
-# `extra_json_body` (optional) is a JSON object merged with action +
-# workspace_id. Returns the response body on stdout (JSON). Non-2xx
-# responses extract `.error` and exit non-zero.
+# `extra_json_body` (optional) is a JSON object merged with the action key.
+# The server derives workspace_id from the PAT, so the client never sends it.
+# Returns the response body on stdout (JSON). Non-2xx responses extract
+# `.error` and exit non-zero.
 ciao_api() {
   ciao_require_tools
   ciao_load_token
   local action="$1"
   local extra="${2:-{}}"
-  local ws
-  ws="$(ciao_workspace_id)"
-  local base="${CIAO_API_BASE:-$CIAO_API_BASE_DEFAULT}"
+  local base="${CIAO_API:-$CIAO_API_DEFAULT}"
 
   local payload
-  payload="$(jq -n --arg action "$action" --arg ws "$ws" --argjson extra "$extra" \
-    '{action: $action, workspace_id: $ws} + $extra')"
+  payload="$(jq -n --arg action "$action" --argjson extra "$extra" \
+    '{action: $action} + $extra')"
 
   local response
   local http_code
@@ -102,7 +101,7 @@ ciao_agent_post() {
   ciao_load_token
   local path="$1"
   local payload="$2"
-  local base="${CIAO_AGENT_BASE:-$CIAO_AGENT_BASE_DEFAULT}"
+  local base="${CIAO_AGENT:-$CIAO_AGENT_DEFAULT}"
 
   local response
   local http_code

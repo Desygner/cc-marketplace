@@ -16,6 +16,9 @@ Drive your [Ciao](https://ciao.dev) projects from the terminal.
    chmod 600 ~/.ciao/credentials
    ```
 
+   The workspace is encoded in the token itself, so you don't need to
+   set anything else for normal use.
+
 4. Confirm the token works:
 
    ```
@@ -51,13 +54,26 @@ Skills are auto-invoked by Claude when the conversation is relevant.
 ## How it works
 
 Every skill and command shells out to `curl` + `jq` against the Ciao
-edge function at `https://usnucnguvktksltkwjkn.supabase.co/functions/v1/integrations-api`
-or the agent-runtime at `https://app.ciao.dev/api/agent-runtime/`, using
-the `CIAO_TOKEN` from `~/.ciao/credentials`. The shared helper is at
+integrations-api edge function and the agent-runtime, using the
+`CIAO_TOKEN` from `~/.ciao/credentials`. The shared helper is at
 `lib/ciao-api.sh`.
 
 No daemon, no MCP server, no compile step. To inspect or extend, edit the
 markdown files directly.
+
+## Pointing at a non-prod Ciao
+
+If you run Ciao locally or against a staging environment, override the
+defaults in `~/.ciao/credentials`:
+
+```
+CIAO_TOKEN=ciao_pat_<your token from the local env>
+CIAO_API=http://127.0.0.1:54321/functions/v1/integrations-api
+CIAO_AGENT=http://127.0.0.1:8787
+```
+
+Both `CIAO_API` (integrations-api base URL) and `CIAO_AGENT` (agent-runtime
+base URL) fall back to the prod endpoints when unset.
 
 ## Uninstall
 
