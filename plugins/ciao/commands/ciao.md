@@ -12,6 +12,7 @@ Reply with exactly this content:
 Ciao plugin — drive Ciao from the terminal
 
 Commands:
+  /ciao-whoami                    Show the active workspace, user, and PAT details
   /ciao-handoff [project]         Ship the current conversation to a project as a subagent
   /ciao-projects                  List your Ciao projects
   /ciao-status [project]          Project state: blocks, env names, branch

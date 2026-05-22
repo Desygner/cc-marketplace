@@ -29,9 +29,10 @@ flow stops at "run registered." Report the run id and a browser link.
 ## When to prefer the browser
 
 If the playbook has runtime parameters (params_schema is non-empty), the
-form rendering belongs in the browser. Tell the user to launch it from
-the QA dashboard at `https://app.ciao.dev/w/<workspace>/qa/playbooks`
-instead. The CLI is best for parameterless playbooks.
+form rendering belongs in the browser. Resolve the workspace slug with
+`ciao_workspace_slug` and link the user to the QA dashboard at
+`https://app.ciao.dev/w/$WS_SLUG/qa/playbooks`. The CLI is best for
+parameterless playbooks.
 
 ## Failures
 

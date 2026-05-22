@@ -43,7 +43,13 @@ RESPONSE="$(ciao_api create_playbook "$PAYLOAD")"
 ```
 
 Returns the new playbook (id, name, etc.). Report the id and a browser
-link: `https://app.ciao.dev/w/<workspace>/qa/playbooks/<id>`.
+link, resolving the workspace slug from `ciao_workspace_slug`:
+
+```bash
+WS_SLUG="$(ciao_workspace_slug)"
+PB_ID="$(echo "$RESPONSE" | jq -r .playbook.id)"
+LINK="https://app.ciao.dev/w/$WS_SLUG/qa/playbooks/$PB_ID"
+```
 
 ## Before creating
 

@@ -77,7 +77,15 @@ SESSION_ID="$(echo "$RESPONSE" | jq -r .session_id)"
 
 Report back to the user with:
 - The friendly label (returned in `RESPONSE`) or the session id
-- A link they can open: `https://app.ciao.dev/w/<workspace-slug>/projects/<project-slug>/builder?subagent=<session_id>`
+- A link they can open. Build it using the workspace slug from
+  `ciao_workspace_slug` and the project's slug:
+
+  ```bash
+  WS_SLUG="$(ciao_workspace_slug)"
+  PROJECT_SLUG="$(echo "$projects_json" | jq -r --arg id "$PROJECT_ID" '.projects[] | select(.id == $id) | .slug')"
+  LINK="https://app.ciao.dev/w/$WS_SLUG/projects/$PROJECT_SLUG/builder?subagent=$SESSION_ID"
+  ```
+
 - One line about what the subagent will do
 
 Do not poll for status from the CLI. The user can watch in the browser.

@@ -128,6 +128,22 @@ ciao_agent_post() {
   ciao_die "$err"
 }
 
+# Resolve the active workspace slug from the PAT. Useful for stamping
+# accurate browser deep links (app.ciao.dev/w/<slug>/...). Echoes the slug
+# on stdout, or "_" if the slug isn't resolvable (the app router falls
+# back to the user's last workspace).
+ciao_workspace_slug() {
+  local me
+  me="$(ciao_api whoami)"
+  local slug
+  slug="$(echo "$me" | jq -r '.workspace.slug // empty')"
+  if [[ -z "$slug" ]]; then
+    echo "_"
+  else
+    echo "$slug"
+  fi
+}
+
 # Resolve a project's id from either a UUID, slug, or partial name.
 # Echoes the resolved id on success, exits non-zero on no/many matches.
 ciao_resolve_project() {

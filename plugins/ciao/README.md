@@ -31,6 +31,7 @@ Drive your [Ciao](https://ciao.dev) projects from the terminal.
 
 | Command | Purpose |
 |---|---|
+| `/ciao-whoami` | Show the active workspace, user, and PAT details |
 | `/ciao-handoff` | Ship the current conversation to a Ciao project as a subagent. The killer one. |
 | `/ciao-projects` | List your projects |
 | `/ciao-status` | Health summary for a project (blocks, env names) |
