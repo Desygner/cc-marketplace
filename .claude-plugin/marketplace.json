@@ -1,13 +1,23 @@
 {
-  "name": "Desygner",
-  "description": "Plugins maintained by Desygner for Claude Code and OpenCode users.",
-  "url": "https://github.com/Desygner/cc-marketplace",
+  "name": "desygner",
+  "owner": {
+    "name": "Desygner",
+    "url": "https://desygner.com"
+  },
+  "metadata": {
+    "description": "Plugins maintained by Desygner for Claude Code and OpenCode users.",
+    "version": "0.1.0"
+  },
   "plugins": [
     {
       "name": "ciao",
       "description": "Drive your Ciao projects from the terminal. Hand off prompts to subagents, list projects, run playbooks.",
-      "path": "plugins/ciao",
-      "homepage": "https://ciao.dev"
+      "source": "./plugins/ciao",
+      "homepage": "https://ciao.dev",
+      "author": {
+        "name": "Desygner",
+        "url": "https://desygner.com"
+      }
     }
   ]
 }
