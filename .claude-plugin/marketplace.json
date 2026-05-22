@@ -1,0 +1,13 @@
+{
+  "name": "Desygner",
+  "description": "Plugins maintained by Desygner for Claude Code and OpenCode users.",
+  "url": "https://github.com/Desygner/cc-marketplace",
+  "plugins": [
+    {
+      "name": "ciao",
+      "description": "Drive your Ciao projects from the terminal. Hand off prompts to subagents, list projects, run playbooks.",
+      "path": "plugins/ciao",
+      "homepage": "https://ciao.dev"
+    }
+  ]
+}

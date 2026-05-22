@@ -1,0 +1,13 @@
+{
+  "name": "ciao",
+  "version": "0.1.0",
+  "description": "Drive your Ciao projects from the terminal. Hand off prompts to subagents, list projects, run playbooks.",
+  "homepage": "https://ciao.dev",
+  "author": {
+    "name": "Desygner",
+    "url": "https://desygner.com"
+  },
+  "license": "MIT",
+  "skills": "./skills",
+  "commands": "./commands"
+}
