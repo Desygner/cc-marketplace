@@ -25,7 +25,7 @@
 # function handles errors explicitly via `ciao_die`.
 
 CIAO_API_DEFAULT="https://usnucnguvktksltkwjkn.supabase.co/functions/v1/integrations-api"
-CIAO_AGENT_DEFAULT="https://app.ciao.dev/api/agent-runtime"
+CIAO_AGENT_DEFAULT="https://agent-runtime.sandbox-test.ciao.dev"
 CIAO_CREDENTIALS_FILE="${CIAO_CREDENTIALS_FILE:-$HOME/.ciao/credentials}"
 
 ciao_die() {
