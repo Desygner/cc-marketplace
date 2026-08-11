@@ -173,3 +173,39 @@ ciao_resolve_project() {
     ciao_die "multiple projects matched '$hint'. Be more specific or pass the slug."
   fi
 }
+
+# ciao_wait_idle <project_id> [branch] [timeout_seconds]
+#
+# Block until the project's queue for that branch is empty, i.e. the main agent
+# has finished the turn. An unattended build has to know this: sending the next
+# foundational prompt while the previous one is still running interleaves two
+# sets of edits on the same tree.
+#
+# Echoes "idle" on success, "timeout" if the deadline passed. Never dies, so a
+# caller can decide whether a slow turn is a failure or just a big build.
+ciao_wait_idle() {
+  ciao_require_tools
+  local project_id="$1"
+  local branch="${2:-main}"
+  local timeout="${3:-1800}"
+  local waited=0
+  local interval=10
+
+  while (( waited < timeout )); do
+    local status
+    status="$(ciao_api turn_status "$(jq -n \
+      --arg pid "$project_id" --arg br "$branch" \
+      '{project_id: $pid, branch: $br}')" 2>/dev/null || echo '{}')"
+    if [[ "$(echo "$status" | jq -r '.state // empty')" == "idle" ]]; then
+      echo "idle"
+      return 0
+    fi
+    sleep "$interval"
+    waited=$(( waited + interval ))
+    # Back off gently: a first build takes minutes, and polling every ten
+    # seconds for all of it is noise.
+    (( interval < 30 )) && interval=$(( interval + 5 ))
+  done
+  echo "timeout"
+  return 1
+}
