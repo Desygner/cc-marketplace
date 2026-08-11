@@ -63,7 +63,11 @@ ciao_api() {
   ciao_require_tools
   ciao_load_token
   local action="$1"
-  local extra="${2:-{}}"
+  # Not "${2:-{}}": the first `}` closes the expansion, so the trailing one
+  # lands in the value as literal text and every call with a body sends
+  # invalid JSON. Only no-body actions survive that, which hides it.
+  local extra="${2:-}"
+  [[ -z "$extra" ]] && extra='{}'
   local base="${CIAO_API:-$CIAO_API_DEFAULT}"
 
   local payload

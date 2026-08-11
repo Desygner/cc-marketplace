@@ -14,9 +14,13 @@ recordings, and reports a verdict.
 ```bash
 source "$CLAUDE_SKILL_DIR/../../lib/ciao-api.sh"
 
+# Set the default on its own line. "${PARAMS:-{}}" looks right but the first
+# `}` closes the expansion, leaving a stray `}` in the value.
+[[ -z "${PARAMS:-}" ]] && PARAMS='{}'
+
 PAYLOAD="$(jq -n \
   --arg sid "$AGENT_SESSION_ID" \
-  --argjson params "${PARAMS:-{}}" \
+  --argjson params "$PARAMS" \
   '{agent_session_id: $sid, params: $params}')"
 
 RESPONSE="$(ciao_agent_post "/playbooks/$PLAYBOOK_ID/runs" "$PAYLOAD")"
