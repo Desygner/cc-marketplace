@@ -103,7 +103,15 @@ send() {
   ciao_wait_idle "$PROJECT_ID" main 2400
 }
 
-send "$(printf 'Implement this app. Keep the spec at docs/03-app.md so we can iterate against it.\n\n%s' "$SPEC")"
+send "$(printf 'Load the frontend-design skill before writing any UI, and commit to a
+deliberate aesthetic that suits this trade — this must not look like a generic
+generated app. Build the whole product, not a demo of it: real auth with
+accounts, real images rather than placeholder blocks, an empty state, settings,
+search and sort on the records, and the one job done to the depth a paid tool
+does it. The person opening this pays a monthly fee for something similar and
+must not be able to believe this is free.
+
+Keep the spec at docs/03-app.md so we can iterate against it.\n\n%s' "$SPEC")"
 ```
 
 **4. Send the seed.** The spec names the tables; the seed fills them with
@@ -132,7 +140,13 @@ Hard limits, because a review loop with no bound turns into a rewrite:
   refactor. If it is not in the spec it is not a finding.
 - **Report nothing when nothing is broken.** An empty round ends the loop.
 
-Check at minimum: the one job completes; data written survives a hard refresh
+Check the bar first, because it is the one that fails silently: **would this
+person believe it was free?** A correct app that looks generated has failed. Put
+it next to an app built for a different box — if they are the same app with
+different words, neither has a point of view.
+
+Then at minimum: the one job completes; sign-in works and data sits behind it;
+there are real images and not placeholder blocks; data written survives a hard refresh
 (if it does not, the agent built a mock and that is a build failure, not a
 polish item); every visible string is in the target language; it is usable at
 phone width AND at desktop width (roughly 390px and 1440px — a phone layout
