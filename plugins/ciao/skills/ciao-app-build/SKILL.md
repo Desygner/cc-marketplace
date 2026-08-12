@@ -25,21 +25,52 @@ source "$CLAUDE_SKILL_DIR/../../lib/ciao-api.sh"
 
 SPEC_PATH="$1"
 SPEC="$(cat "$SPEC_PATH")"
-NAME="${2:-$(head -1 "$SPEC_PATH" | sed 's/^#\+ *//')}"
 FOLDER="${FOLDER:-Boilerplates}"
-
-# Recipient-facing, in the slice's language. One plain sentence about what the
-# app does. Never mention boxes, campaigns, segments or the spec file.
-DESCRIPTION="<one sentence, in the target language>"
 ```
 
-**The name and description are recipient-facing.** They appear on the clone
-landing page verbatim, so they are product copy, not filing. Name the project
-for what it does, in the language of the slice — `Gerador de orçamentos`,
-`Generador de presupuestos`, `Quote builder` — and **never append a language
-code**. A reader sees exactly one of these; "(en)" tells them nothing and reads
-as something internal that escaped. The language is already obvious from the
-words. Strip any "(xx)" the caller passes in rather than honouring it.
+## The name and description are shown to the recipient
+
+They render verbatim on the clone landing page. They are the first words a
+tradesperson reads about this thing, so they are product copy — not filing, not
+a spec reference, not a note to ourselves.
+
+**Write both yourself. Do not derive them.** There used to be defaults here:
+the name fell back to the spec's first heading and the description to the spec
+filename. Deriving from our own paperwork can only ever produce our own
+paperwork, and it shipped exactly that:
+
+> **Construction contractor** — *Quote builder, quote-only skeleton, from
+> campaigns/construction-contractor-en/03-app.md*
+
+Three separate leaks in one line. "Construction contractor" is the box we filed
+them under, not a product; nobody calls their own software by their trade.
+"skeleton" is our internal word. And the path tells a roofer in Yorkshire that
+he is row 41 of a segmentation exercise.
+
+What it should have said:
+
+> **Quote builder** — *Write a quote, add your line items, send it as a PDF.*
+
+The rules:
+
+- **The name is what the app does**, in the language of the slice. `Quote
+  builder`, `Gerador de orçamentos`, `Generador de presupuestos`, `Pembuat
+  penawaran`.
+- **Never a language code.** No "(en)", no "- Spanish". The reader sees one of
+  these and the language is already obvious from the words. Strip any "(xx)" a
+  caller passes rather than honouring it.
+- **Never the trade as the title.** They know their trade. Name the tool.
+- **The description is one plain sentence** about what it does, same language.
+- **Banned in both, always:** box, campaign, segment, skeleton, boilerplate,
+  spec, template, any file path, any slug, any `.md`.
+
+Read both back before creating the project and ask whether a stranger who
+received a cold email would find anything odd in them. If yes, rewrite.
+
+```bash
+NAME="<what it does, in the slice's language>"
+DESCRIPTION="<one plain sentence, same language>"
+```
 
 **1. Create the project**, in a folder. Without `folder` these pile up loose in
 the workspace, and a campaign makes one per trade per language, so that gets
