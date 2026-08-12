@@ -1,22 +1,28 @@
 ---
 name: ciao-app-build
-description: Build an app in Ciao from a spec file, end to end and unattended. Creates the project, drives the main agent through the build and the seed, reviews the running app against the spec, and returns a clone link. Use when a spec is ready and somebody wants the app to exist without sitting in the builder.
+description: Build an app in Ciao from a spec file, end to end and unattended. Creates the project, drives the main agent through the build, waits for each turn, and returns a clone link. Use when a spec is ready and somebody wants the app built without sitting in the builder.
 ---
 
 # Building an app in Ciao from a spec
 
-One spec in, one clone link out. Everything between is this skill's job and
-nobody watches it happen.
+Spec in, clone link out. This skill owns the mechanics only: creating the
+project, sending prompts in order, waiting for each turn, and turning on
+sharing.
+
+**What the app should be is the caller's business.** The spec says that. This
+skill is installed in every Ciao workspace, so anything it asserts about scope,
+design, quality or naming is one team's opinion imposed on everyone else's
+builds. Carry the caller's instructions; add none.
 
 ## What drives what
 
-Prompts go to the **main agent**, one at a time. Not subagents: `/subagents/spawn`
-is for parallel work that can be merged, and these prompts are foundational —
-the schema, the seed, the fixes — each depending on the last. Two of them in
-flight at once means two sets of edits on the same tree.
+Prompts go to the **main agent**, one at a time. Not subagents:
+`/subagents/spawn` is for parallel work that can be merged, and these prompts
+are foundational — the schema, the seed, the fixes — each depending on the last.
+Two in flight at once means two sets of edits on the same tree.
 
-The queue enforces that for you, and `ciao_wait_idle` is how you respect it.
-**Never send a prompt without waiting for the previous turn to finish.**
+The queue enforces that, and `ciao_wait_idle` is how you respect it. **Never
+send a prompt without waiting for the previous turn to finish.**
 
 ## The sequence
 
@@ -25,76 +31,34 @@ source "$CLAUDE_SKILL_DIR/../../lib/ciao-api.sh"
 
 SPEC_PATH="$1"
 SPEC="$(cat "$SPEC_PATH")"
-FOLDER="${FOLDER:-Boilerplates}"
+NAME="${NAME:?a project name is required}"
+DESCRIPTION="${DESCRIPTION:-}"
+FOLDER="${FOLDER:-}"            # optional; created on demand if named
 ```
 
-## The name and description are shown to the recipient
+`NAME` and `DESCRIPTION` are inputs, never derived. They render verbatim
+wherever the project appears, including the clone landing page, so a name taken
+from the spec's heading or a description built from its filename leaks the
+caller's filing to whoever opens the link. If they are missing, ask — do not
+invent them from the path.
 
-They render verbatim on the clone landing page. They are the first words a
-tradesperson reads about this thing, so they are product copy — not filing, not
-a spec reference, not a note to ourselves.
-
-**Write both yourself. Do not derive them.** There used to be defaults here:
-the name fell back to the spec's first heading and the description to the spec
-filename. Deriving from our own paperwork can only ever produce our own
-paperwork, and it shipped exactly that:
-
-> **Construction contractor** — *Quote builder, quote-only skeleton, from
-> campaigns/construction-contractor-en/03-app.md*
-
-Three separate leaks in one line. "Construction contractor" is the box we filed
-them under, not a product; nobody calls their own software by their trade.
-"skeleton" is our internal word. And the path tells a roofer in Yorkshire that
-he is row 41 of a segmentation exercise.
-
-What it should have said:
-
-> **Quote builder** — *Write a quote, add your line items, send it as a PDF.*
-
-The rules:
-
-- **The name is what the app does**, in the language of the slice. `Quote
-  builder`, `Gerador de orçamentos`, `Generador de presupuestos`, `Pembuat
-  penawaran`.
-- **Never a language code.** No "(en)", no "- Spanish". The reader sees one of
-  these and the language is already obvious from the words. Strip any "(xx)" a
-  caller passes rather than honouring it.
-- **Never the trade as the title.** They know their trade. Name the tool.
-- **The description is one plain sentence** about what it does, same language.
-- **Banned in both, always:** box, campaign, segment, skeleton, boilerplate,
-  spec, template, any file path, any slug, any `.md`.
-
-Read both back before creating the project and ask whether a stranger who
-received a cold email would find anything odd in them. If yes, rewrite.
+**1. Create the project.**
 
 ```bash
-NAME="<what it does, in the slice's language>"
-DESCRIPTION="<one plain sentence, same language>"
-```
-
-**1. Create the project**, in a folder. Without `folder` these pile up loose in
-the workspace, and a campaign makes one per trade per language, so that gets
-unmanageable within a day. The folder is created on demand if it does not
-exist.
-
-```bash
-PROJECT="$(ciao_api create_project "$(jq -n --arg n "$NAME" \
-  --arg d "$DESCRIPTION" \
+PROJECT="$(ciao_api create_project "$(jq -n --arg n "$NAME" --arg d "$DESCRIPTION" \
   --arg f "$FOLDER" \
-  '{name: $n, description: $d, folder: $f}')")"
+  '{name: $n, description: $d} + (if $f == "" then {} else {folder: $f} end)')")"
 PROJECT_ID="$(echo "$PROJECT" | jq -r .project.id)"
 ```
 
-**2. Wake its sandbox** before the first prompt, so the turn does not start by
+**2. Wake its sandbox** before the first prompt, so the turn does not begin by
 waiting on a cold pod.
 
 ```bash
 ciao_api ensure_session "$(jq -n --arg pid "$PROJECT_ID" '{project_id: $pid}')" >/dev/null
 ```
 
-**3. Send the spec.** Inline, not attached: the API takes JSON only, and a spec
-is small. Ask for the spec to be kept in the repo so later turns can re-read it
-rather than being re-told.
+**3. Send the spec.**  Inline, not attached: the API takes JSON only.
 
 ```bash
 send() {
@@ -103,57 +67,25 @@ send() {
   ciao_wait_idle "$PROJECT_ID" main 2400
 }
 
-send "$(printf 'Load the frontend-design skill before writing any UI, and commit to a
-deliberate aesthetic that suits this trade — this must not look like a generic
-generated app. Build the whole product, not a demo of it: real auth with
-accounts, real images rather than placeholder blocks, an empty state, settings,
-search and sort on the records, and the one job done to the depth a paid tool
-does it. The person opening this pays a monthly fee for something similar and
-must not be able to believe this is free.
-
-Keep the spec at docs/03-app.md so we can iterate against it.\n\n%s' "$SPEC")"
+send "$(printf 'Implement this app. Keep the spec at docs/spec.md so later turns can read it.\n\n%s' "$SPEC")"
 ```
 
-**4. Send the seed.** The spec names the tables; the seed fills them with
-believable rows for the trade. Real data in a real database — see the "real
-software" rule in the calling skill. Generate the SQL from the spec's schema
-section and send it as its own turn.
+If the caller supplied further instructions — a design brief, a seed file,
+house rules — send each as its own turn, in the order given, waiting between
+them. Do not add instructions of your own.
 
-```bash
-send "$(printf 'Create a seed.sql with the demo data below and run it after the schema migration.\n\n```sql\n%s\n```' "$SEED_SQL")"
-```
+**4. Review, if the caller asked for it.** Get the preview URL from `ciao_api
+get_project`, open it, and check it against **the spec** rather than your own
+taste. One prompt per round, listing only what is broken.
 
-**5. Review, in bounded rounds.** This is the part that decides whether the app
-is worth linking to, and the part most likely to go wrong.
+Bounds, because a review loop without them becomes a rewrite:
 
-Get the preview URL from `ciao_api get_project`, open it, and **use it** —
-click through the one job the spec names, end to end. Then send one prompt per
-round listing only what is actually broken.
+- Three rounds maximum, then stop and report.
+- Every finding traces to a line in the spec.
+- Never add scope. If it is not in the spec it is not a finding.
+- An empty round ends the loop.
 
-Hard limits, because a review loop with no bound turns into a rewrite:
-
-- **Three rounds maximum.** If it is not right after three, stop and report;
-  something is wrong with the spec, not the build.
-- **Only against the spec.** The one job, the vetting checklist, the language.
-  Every finding must trace to a line in the spec.
-- **Never add scope.** Not a feature you thought of, not a nice-to-have, not a
-  refactor. If it is not in the spec it is not a finding.
-- **Report nothing when nothing is broken.** An empty round ends the loop.
-
-Check the bar first, because it is the one that fails silently: **would this
-person believe it was free?** A correct app that looks generated has failed. Put
-it next to an app built for a different box — if they are the same app with
-different words, neither has a point of view.
-
-Then at minimum: the one job completes; sign-in works and data sits behind it;
-there are real images and not placeholder blocks; data written survives a hard refresh
-(if it does not, the agent built a mock and that is a build failure, not a
-polish item); every visible string is in the target language; it is usable at
-phone width AND at desktop width (roughly 390px and 1440px — a phone layout
-stretched across a monitor is a failure, not a nitpick, because writing quotes
-happens at a laptop); nothing says "example", "demo" or "TODO".
-
-**6. Turn on sharing and take the link.**
+**5. Turn on sharing and take the link.**
 
 ```bash
 CLONE="$(ciao_api clone_link "$(jq -n --arg pid "$PROJECT_ID" \
@@ -161,28 +93,19 @@ CLONE="$(ciao_api clone_link "$(jq -n --arg pid "$PROJECT_ID" \
 CLONE_URL="$(echo "$CLONE" | jq -r '.token | "https://app.ciao.dev/clone#" + .')"
 ```
 
-Pack no keys unless the spec says to. The clone gets its own database, so it
-needs none of the source's credentials.
+Pack no keys unless the caller says to. The clone provisions its own database,
+so it needs none of the source's credentials.
 
 ## Report back
 
-Two lines:
-
-```
-Done: <project name> built and shared — <clone url>
-Next: /<the command that follows>
-```
-
-Anything still broken goes in `03-app.md`, not in chat. If the three-round limit
-was hit with findings outstanding, that is a spec problem for a human: say so as
-the Blocked line instead.
+Two lines: what exists now with the clone link, and what the caller should do
+next. Anything unresolved belongs in their spec directory, not in chat. If the
+three-round limit was reached with findings outstanding, say so — that is a
+spec problem for a human.
 
 ## Failure modes
 
 - `403 Only a personal access token can create a project` — the token is an
   integration key, not a PAT. Mint a PAT in Integrations.
-- `ciao_wait_idle` returns `timeout` — the turn is still running after 40
-  minutes. Do not send another prompt on top of it. Report the project link and
-  stop.
-- The first build comes back with `localStorage` or an in-memory store. That is
-  a review finding and round two fixes it. It is never acceptable to ship.
+- `ciao_wait_idle` returns `timeout` — the turn is still running after forty
+  minutes. Do not send another prompt on top of it. Report the project and stop.
