@@ -26,14 +26,31 @@ source "$CLAUDE_SKILL_DIR/../../lib/ciao-api.sh"
 SPEC_PATH="$1"
 SPEC="$(cat "$SPEC_PATH")"
 NAME="${2:-$(head -1 "$SPEC_PATH" | sed 's/^#\+ *//')}"
+FOLDER="${FOLDER:-Boilerplates}"
+
+# Recipient-facing, in the slice's language. One plain sentence about what the
+# app does. Never mention boxes, campaigns, segments or the spec file.
+DESCRIPTION="<one sentence, in the target language>"
 ```
 
-**1. Create the project.**
+**The name and description are recipient-facing.** They appear on the clone
+landing page verbatim, so they are product copy, not filing. Name the project
+for what it does, in the language of the slice — `Gerador de orçamentos`,
+`Generador de presupuestos`, `Quote builder` — and **never append a language
+code**. A reader sees exactly one of these; "(en)" tells them nothing and reads
+as something internal that escaped. The language is already obvious from the
+words. Strip any "(xx)" the caller passes in rather than honouring it.
+
+**1. Create the project**, in a folder. Without `folder` these pile up loose in
+the workspace, and a campaign makes one per trade per language, so that gets
+unmanageable within a day. The folder is created on demand if it does not
+exist.
 
 ```bash
 PROJECT="$(ciao_api create_project "$(jq -n --arg n "$NAME" \
-  --arg d "Boilerplate built from $(basename "$SPEC_PATH")" \
-  '{name: $n, description: $d}')")"
+  --arg d "$DESCRIPTION" \
+  --arg f "$FOLDER" \
+  '{name: $n, description: $d, folder: $f}')")"
 PROJECT_ID="$(echo "$PROJECT" | jq -r .project.id)"
 ```
 
@@ -87,7 +104,9 @@ Hard limits, because a review loop with no bound turns into a rewrite:
 Check at minimum: the one job completes; data written survives a hard refresh
 (if it does not, the agent built a mock and that is a build failure, not a
 polish item); every visible string is in the target language; it is usable at
-phone width; nothing says "example", "demo" or "TODO".
+phone width AND at desktop width (roughly 390px and 1440px — a phone layout
+stretched across a monitor is a failure, not a nitpick, because writing quotes
+happens at a laptop); nothing says "example", "demo" or "TODO".
 
 **6. Turn on sharing and take the link.**
 
@@ -102,9 +121,16 @@ needs none of the source's credentials.
 
 ## Report back
 
-Three lines: the clone link, how many review rounds it took, and anything still
-broken that you chose not to fix. If a round hit the three-round limit with
-findings outstanding, say so plainly — that is a spec problem for a human.
+Two lines:
+
+```
+Done: <project name> built and shared — <clone url>
+Next: /<the command that follows>
+```
+
+Anything still broken goes in `03-app.md`, not in chat. If the three-round limit
+was hit with findings outstanding, that is a spec problem for a human: say so as
+the Blocked line instead.
 
 ## Failure modes
 
