@@ -58,21 +58,39 @@ waiting on a cold pod.
 ciao_api ensure_session "$(jq -n --arg pid "$PROJECT_ID" '{project_id: $pid}')" >/dev/null
 ```
 
-**3. Send the spec.**  Inline, not attached: the API takes JSON only.
+**3. Send the spec as an attachment, never inside the prompt.**
+
+A prompt is capped at 10,000 characters and a spec is longer than that. Attach
+it: the file is delivered into the sandbox at `/home/sandbox/uploads/<name>`
+before the turn starts, and the agent is told in its system prompt that it is
+there. The prompt then only has to say what to do with it.
 
 ```bash
-send() {
-  ciao_api send_prompt "$(jq -n --arg pid "$PROJECT_ID" --arg p "$1" \
-    '{project_id: $pid, prompt: $p}')" >/dev/null
+send() {                              # send "<prompt>" [attach-path ...]
+  local prompt="$1"; shift
+  local atts="[]"
+  for path in "$@"; do
+    atts="$(jq -n --argjson a "$atts" --arg n "$(basename "$path")" \
+      --rawfile c "$path" '$a + [{name: $n, content: $c}]')"
+  done
+  ciao_api send_prompt "$(jq -n --arg pid "$PROJECT_ID" --arg p "$prompt" \
+    --argjson a "$atts" \
+    '{project_id: $pid, prompt: $p} + (if ($a|length) == 0 then {} else {attachments: $a} end)')" >/dev/null
   ciao_wait_idle "$PROJECT_ID" main 2400
 }
 
-send "$(printf 'Implement this app. Keep the spec at docs/spec.md so later turns can read it.\n\n%s' "$SPEC")"
+send "Read /home/sandbox/uploads/$(basename "$SPEC_PATH"), copy it to docs/spec.md so later turns can read it, then implement it." "$SPEC_PATH"
 ```
+
+Attaching also buys a better model. The effort scorer sets a floor when a
+prompt carries attachments, so the build does not land on the bottom rung the
+way a bare one-line prompt does.
 
 If the caller supplied further instructions — a design brief, a seed file,
 house rules — send each as its own turn, in the order given, waiting between
-them. Do not add instructions of your own.
+them. Long ones are attachments too; `send` takes as many paths as you give it.
+A migration or a seed is better attached than pasted, because the agent can
+then apply the file rather than retype it. Do not add instructions of your own.
 
 **4. Review, if the caller asked for it.** Get the preview URL from `ciao_api
 get_project`, open it, and check it against **the spec** rather than your own
@@ -84,6 +102,22 @@ Bounds, because a review loop without them becomes a rewrite:
 - Every finding traces to a line in the spec.
 - Never add scope. If it is not in the spec it is not a finding.
 - An empty round ends the loop.
+
+### One page, reused, then closed
+
+A review has many checks and needs one tab for all of them. Every browser page
+is a separate process holding over a hundred megabytes for as long as it is
+open, so a loop that opens a page per check quietly costs a gigabyte and keeps
+it until the machine reboots.
+
+- Start with `list_pages`. If a page is already there, `select_page` it. Only
+  call `new_page` when there is nothing to reuse.
+- Move with `navigate_page`, never by opening another tab. Reloading is
+  `navigate_page` to the same URL.
+- Check widths with `resize_page`, not with a second window. Phone and desktop
+  are two sizes of one page.
+- `close_page` when the review ends, including when it ends badly. A run that
+  gave up still closes what it opened.
 
 **5. Turn on sharing and take the link.**
 
@@ -109,3 +143,19 @@ spec problem for a human.
   integration key, not a PAT. Mint a PAT in Integrations.
 - `ciao_wait_idle` returns `timeout` — the turn is still running after forty
   minutes. Do not send another prompt on top of it. Report the project and stop.
+- `413 The prompt is N characters and the limit is 10,000` — attach the long
+  text instead of pasting it. Do not chop the spec into fragments to squeeze
+  under the limit: the agent then holds a quarter of the brief per turn and
+  builds accordingly.
+
+## Believe the sandbox, not the preview
+
+When a turn reports work you cannot see, check what actually changed before
+concluding the runtime is broken. `get_project` returns a preview URL that can
+serve a stale bundle, and reading an old page from it looks exactly like an
+agent that did nothing.
+
+The evidence that settles it is in the turn itself: `turn_status` and the
+project's chat messages carry a `commit_sha` and a unified diff per file. A
+turn with a diff did the work. If the preview disagrees with the diff, the
+preview is what is wrong, and that is worth reporting on its own.
